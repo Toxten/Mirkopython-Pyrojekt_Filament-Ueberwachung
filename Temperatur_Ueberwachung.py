@@ -26,11 +26,12 @@ from HTU2X import HTU21D
 SSID = "BZTG-IoT"
 PASSWORD = "WerderBremen24"
 
-MQTT_SERVER = "10.50.217.193"
-CLIENT_ID = "MQTT_LG_ESP"
+MQTT_SERVER = "192.168.1.223"
+CLIENT_ID = "MQTT_ESP_LG"
 MQTT_TOPIC = "Guntshaus/Filament/Lagerung/Daten"
 
-i2c = SoftI2C(scl=Pin(22), sda=Pin(21))                        # I2C für Sensorik deklarieren
+# I2C für Sensorik deklarieren
+i2c = SoftI2C(scl=Pin(22), sda=Pin(21))                        
 
 htu = HTU21D(22, 21)
 
@@ -39,6 +40,7 @@ led_Lüfter = Pin(27, Pin.OUT)
 
 abkuelen = False
 waermen = False
+test =True
 
 # Erstellen des Zeitstempels
 oldTime =time.time()
@@ -64,16 +66,16 @@ print(station.ifconfig())
 
 while True:
 
-  mqttClient = MQTTClient(CLIENT_ID, MQTT_SERVER) 
-  mqttClient.connect()
-
-
+  
   humid = round(htu.humidity)
   temp = round(htu.temperature)
   
 
   humid_string = str(humid)
   temp_string = str(temp)
+
+  print(humid_string)
+  print(temp_string)
   #-------Abfrage Luftfeuchtigkeit
   
   if humid > 40:
@@ -111,14 +113,18 @@ while True:
         }
     }
 
-  if time.time() >= oldTime + oldTimeMax:
+  mqttClient = MQTTClient(CLIENT_ID, MQTT_SERVER) 
+  mqttClient.connect()  
+  """"" 
+  #time.time() >= oldTime + oldTimeMax:
+  if test == True:
     
     print("Temp:",temp, "Humid:", humid +" %")
 
     mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
 
     oldTime=time.time()
-    
+  """""
   mqttClient.disconnect()
- 
+    
   
