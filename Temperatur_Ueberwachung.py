@@ -57,8 +57,7 @@ while True:
   humid_string = str(humid)
   temp_string = str(temp)
 
-  print(humid_string)
-  print(temp_string)
+  
   #-------Abfrage Luftfeuchtigkeit
   
   if humid > 40:
@@ -97,12 +96,12 @@ while True:
     }
 
    
-  #time.time() >= oldTime + oldTimeMax:
-  if test == True:
+  
+  if time.time() >= oldTime + oldTimeMax:
     
     print("Temp:",temp, "Humid:", humid," %")
 
-    #mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
+    mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
 
     oldTime=time.time()
 
