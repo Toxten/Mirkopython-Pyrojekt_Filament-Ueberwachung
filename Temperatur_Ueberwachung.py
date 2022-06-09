@@ -16,18 +16,12 @@ Version 0 17.05.2022
 Kundenauftrag fertig bis Freitag als Mail
 Abgabe ist 10.06
 """""
-import network
-import time
-import json
+import time, json
 from machine import Pin, SoftI2C
-from umqtt.simple import MQTTClient
+from boot import mqttClient
 from HTU2X import HTU21D
 
-SSID = "BZTG-IoT"
-PASSWORD = "WerderBremen24"
 
-MQTT_SERVER = "192.168.1.223"
-CLIENT_ID = "MQTT_ESP_LG"
 MQTT_TOPIC = "Guntshaus/Filament/Lagerung/Daten"
 
 # I2C für Sensorik deklarieren
@@ -46,22 +40,11 @@ test =True
 oldTime =time.time()
 oldTimeMax =10
 
-#------------------WIFI-----------
-station = network.WLAN(network.STA_IF)
-
-station.active(True)
-station.connect(SSID, PASSWORD)
-
-while station.isconnected() == False:
-  pass
-
-print("Connection successful")
-print(station.ifconfig())
-
-#------------------WIFI Ende-------------------
-
-
-
+try:
+    mqttClient.connect()
+    print("MQTT-Connected")
+except:
+    pass
 
 
 while True:
@@ -113,18 +96,16 @@ while True:
         }
     }
 
-  mqttClient = MQTTClient(CLIENT_ID, MQTT_SERVER) 
-  mqttClient.connect()  
-  """"" 
+   
   #time.time() >= oldTime + oldTimeMax:
   if test == True:
     
-    print("Temp:",temp, "Humid:", humid +" %")
+    print("Temp:",temp, "Humid:", humid," %")
 
-    mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
+    #mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
 
     oldTime=time.time()
-  """""
-  mqttClient.disconnect()
+
+    time.sleep(5)
     
   
