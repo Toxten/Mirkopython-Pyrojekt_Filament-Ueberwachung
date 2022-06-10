@@ -60,11 +60,11 @@ while True:
   
   #-------Abfrage Luftfeuchtigkeit
   
-  if humid > 40:
+  if humid > 50:
     led_Lüfter.value(1)
     led_Heizspule.value(1)
   
-  elif humid <=40:
+  elif humid <=50:
     led_Lüfter(0)
     led_Heizspule.value(0)
   
