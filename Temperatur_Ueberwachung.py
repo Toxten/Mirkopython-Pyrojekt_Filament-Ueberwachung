@@ -11,7 +11,7 @@ Sinkt die Temperatur unter 18°C => Heizspirale ein bis Temp 22°C
 HTU2X über I2C (scl = Pin 22, sda = Pin 21)
 Rote LED = Pin 26  I  Grüne LED = Pin 27
 
-Version 0 17.05.2022
+Version 1 10.06.2022
 
 Kundenauftrag fertig bis Freitag als Mail
 Abgabe ist 10.06
@@ -23,18 +23,21 @@ from HTU2X import HTU21D
 
 
 MQTT_TOPIC = "Guntshaus/Filament/Lagerung/Daten"
-
-# I2C für Sensorik deklarieren
-i2c = SoftI2C(scl=Pin(22), sda=Pin(21))                        
-
+                       
+#-----Deklarieren der I2C Anschlüsse(HTU)
 htu = HTU21D(22, 21)
 
 led_Heizspule = Pin(26, Pin.OUT)
 led_Lüfter = Pin(27, Pin.OUT)
 
+bWare = 0
+zeitBWare = 0
+
 abkuelen = False
 waermen = False
-test =True
+
+bWareBereich =False
+bWareZeitSet = False
 
 # Erstellen des Zeitstempels
 oldTime =time.time()
@@ -63,34 +66,58 @@ while True:
   if humid > 50:
     led_Lüfter.value(1)
     led_Heizspule.value(1)
+    bWareBereich = True
   
   elif humid <=50:
     led_Lüfter(0)
     led_Heizspule.value(0)
+    bWareBereich = False
   
   #------Abfrage Temperatur
   if temp > 25:
     abkuehlen = True
     led_Lüfter(1)
-  
+    bWareBereich = True
+
   if temp == 20 and abkuehlen == True:
     abkuehlen = False
     led_Lüfter(0)
+    bWareBereich = False
 
   if temp < 18:
     waermen = True
     led_Heizspule(1)
+    bWareBereich = True
 
   if temp == 22 and waermen == True:
-    waermen = True
-    led_Heizspule(1)
+    waermen = False
+    led_Heizspule(0)
+    bWareBereich = False
+
+  #------Abfrage B-Ware
+  if bWareBereich == False:
+      bWareZeitSet = False
+
+  if bWareBereich == True and bWareZeitSet == False:
+    zeitBWare = time.time()
+    bWareZeitSet = not bWareZeitSet
+
+  if time.time() >= zeitBWare + 30 and bWareBereich == True:
+    bWare = 1
+  else:
+    bWare = 0
+
+  
+
+
 
   
   dataFilament ={     
       
         "Filamentbox": {
           "Temperatur" : temp_string,
-          "Humidity" : humid_string
+          "Humidity" : humid_string,
+          "BWare": bWare
                    
         }
     }
@@ -99,7 +126,7 @@ while True:
   
   if time.time() >= oldTime + oldTimeMax:
     
-    print("Temp:",temp, "Humid:", humid," %")
+    print("Temp:",temp, "Humid:", humid," %", "B-Ware:", bWare)
 
     mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
 
