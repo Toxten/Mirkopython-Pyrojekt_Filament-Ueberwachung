@@ -1,7 +1,15 @@
-'''
+"""""
+Author: Luca Görke
+Datum: 17.05.2022
+Hardware: ESP32 LILYGO
+
 Verbinden des ESP32 in ein Wlan-Netz
 Station == Client
-'''
+
+Version 2 19.06.2022
+
+"""""
+
 import network
 from umqtt.simple import MQTTClient
 import time

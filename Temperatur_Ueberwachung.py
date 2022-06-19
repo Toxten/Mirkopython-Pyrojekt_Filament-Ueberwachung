@@ -8,6 +8,7 @@ Diese Werte werden über MQTT an NodeRed geliefert und von da aus in eine Datenb
 Übersteigt die Temeperatur 25°C => Lüfter ein bis Temp 20°C erreicht.
 Sinkt die Temperatur unter 18°C => Heizspirale ein bis Temp 22°C
 
+Hardware:
 HTU2X über I2C (scl = Pin 22, sda = Pin 21)
 Rote LED = Pin 26  I  Grüne LED = Pin 27
 
@@ -15,6 +16,7 @@ Version 2 19.06.2022
 
 """""
 #--------------| Importbereich |---------------------------
+from pickle import TRUE
 import time, json
 from machine import Pin, SoftI2C
 from boot import mqttClient
@@ -46,7 +48,7 @@ waermen = False
 bWareBereich =False
 bWareZeitSet = False
 
-uebergabeChargenID = False
+uebergabeChargenID = True65
 neueID = 0
 chargenID = ''
 #--------------| Hilfsvariablen Ende |-----------------------
@@ -65,7 +67,7 @@ except:
 
 
 while True:
-  #-----Anfrag für die Chargen ID
+  #-----Anfrage für die Chargen ID
   if chargenID == '':
     chargenID = str(input("Bitte ChargenID eingeben: ")) # Eingabe der Chargen ID
     neueID = input("Ist die ID neu? JA = 1, Nein =0  ")
@@ -150,13 +152,14 @@ while True:
     zeitBWare = time.time()
     bWareZeitSet = not bWareZeitSet
 
-  if time.time() >= zeitBWare + 10 and bWareBereich == True:
+  if time.time() >= (zeitBWare + 15) and bWareBereich == True:
     bWare = 1
   else:
     bWare = 0
 
   # B-Waren Meldung an Node-RED
   if bWare == 1:
+    neueID = 0
     dataCharge = {
       
       "Charge": {
@@ -178,7 +181,9 @@ while True:
     
         
     mqttClient.publish(MQTT_TOPIC_FILAMENT, json.dumps(dataFilament))
+    time.sleep(1)
     mqttClient.publish(MQTT_TOPIC_CHARGE, json.dumps(dataCharge))
+    time.sleep(1)
     chargenID = ''
     
   # Übermittlung der Daten an den Broker und Node-RED
