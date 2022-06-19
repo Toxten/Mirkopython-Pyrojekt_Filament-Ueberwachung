@@ -13,8 +13,6 @@ Rote LED = Pin 26  I  Grüne LED = Pin 27
 
 Version 1 10.06.2022
 
-Kundenauftrag fertig bis Freitag als Mail
-Abgabe ist 10.06
 """""
 import time, json
 from machine import Pin, SoftI2C
@@ -22,14 +20,15 @@ from boot import mqttClient
 from HTU2X import HTU21D
 
 
-MQTT_TOPIC = "Guntshaus/Filament/Lagerung/Daten"
+MQTT_TOPIC_FILAMENT= "Guntshaus/Filament/Lagerung/Daten"
+MQTT_TOPIC_CHARGE= "Guntshaus/Charge/Daten"
                        
 #-----Deklarieren der I2C Anschlüsse(HTU)
 htu = HTU21D(22, 21)
 
 led_Heizspule = Pin(26, Pin.OUT)
 led_Lüfter = Pin(27, Pin.OUT)
-
+#-----Deklarieren von Hilfvariablen
 bWare = 0
 zeitBWare = 0
 
@@ -39,6 +38,9 @@ waermen = False
 bWareBereich =False
 bWareZeitSet = False
 
+uebergabeChargenID = False
+neueID = 0
+chargenID = ''
 # Erstellen des Zeitstempels
 oldTime =time.time()
 oldTimeMax =10
@@ -52,7 +54,30 @@ except:
 
 while True:
 
-  
+  if chargenID == '':
+    chargenID = str(input("Bitte ChargenID eingeben: ")) # Eingabe der Chargen ID
+    neueID = input("Ist die ID neu? JA = 1, Nein =0  ")
+    print("Die ChargenID lautet: ", chargenID)
+    uebergabeChargenID = False
+    bWare = False
+
+  if uebergabeChargenID == False:
+    dataCharge = {
+      
+      "Charge": {
+          "ChargenID" : chargenID,
+          "BWare" : bWare,
+          "UpdateDatensatz" : neueID
+    }
+    }
+    mqttClient.publish(MQTT_TOPIC_CHARGE, json.dumps(dataCharge))
+    print("ID versendet")
+    uebergabeChargenID = True
+
+
+
+
+
   humid = round(htu.humidity)
   temp = round(htu.temperature)
   
@@ -60,6 +85,16 @@ while True:
   humid_string = str(humid)
   temp_string = str(temp)
 
+  # Json Filament
+  dataFilament ={     
+      
+        "Filamentbox": {
+          "Temperatur" : temp_string,
+          "Humidity" : humid_string,
+          "ChargenID": chargenID
+                   
+        }
+    }
   
   #-------Abfrage Luftfeuchtigkeit
   
@@ -107,28 +142,38 @@ while True:
   else:
     bWare = 0
 
-  
-
-
-
-  
-  dataFilament ={     
+  if bWare == 1:
+    dataCharge = {
+      
+      "Charge": {
+          "ChargenID" : chargenID,
+          "BWare" : bWare,
+          "UpdateDatensatz" : neueID
+      }
+    }
+    
+    dataFilament ={     
       
         "Filamentbox": {
           "Temperatur" : temp_string,
           "Humidity" : humid_string,
-          "BWare": bWare
+          "ChargenID": chargenID
                    
         }
     }
-
-   
-  
-  if time.time() >= oldTime + oldTimeMax:
     
-    print("Temp:",temp, "Humid:", humid," %", "B-Ware:", bWare)
+        
+    mqttClient.publish(MQTT_TOPIC_FILAMENT, json.dumps(dataFilament))
+    mqttClient.publish(MQTT_TOPIC_CHARGE, json.dumps(dataCharge))
+    chargenID = ''
+    
 
-    mqttClient.publish(MQTT_TOPIC, json.dumps(dataFilament))
+  
+  if (time.time() >= oldTime + oldTimeMax) and chargenID != '' :
+    
+    print("Temp:",temp, "Humid:", humid," %", "Chargen ID:", chargenID)
+
+    mqttClient.publish(MQTT_TOPIC_FILAMENT, json.dumps(dataFilament))
 
     oldTime=time.time()
 
