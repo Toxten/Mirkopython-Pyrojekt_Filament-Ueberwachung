@@ -19,7 +19,7 @@ MQTT_Server = '192.168.137.1'
 CLIENT_ID = "MQTT_LGA"
 #--------------| Konfig MQTT Ende |-----------------------------
 
-
+#--------------| Aufbau Wlan-Verbindung |-----------------------
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 
@@ -32,7 +32,7 @@ if not wlan.isconnected():
     print()
     print('Connection successful')
     print(wlan.ifconfig())
-    print()
+    
 
 mqttClient = MQTTClient(CLIENT_ID, MQTT_Server)  
 

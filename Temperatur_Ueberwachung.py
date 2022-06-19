@@ -11,24 +11,32 @@ Sinkt die Temperatur unter 18°C => Heizspirale ein bis Temp 22°C
 HTU2X über I2C (scl = Pin 22, sda = Pin 21)
 Rote LED = Pin 26  I  Grüne LED = Pin 27
 
-Version 1 10.06.2022
+Version 2 19.06.2022
 
 """""
+#--------------| Importbereich |---------------------------
 import time, json
 from machine import Pin, SoftI2C
 from boot import mqttClient
 from HTU2X import HTU21D
 
+#--------------| Import Ende |-----------------------------
 
+#--------------| MQTT Topics |-----------------------------
 MQTT_TOPIC_FILAMENT= "Guntshaus/Filament/Lagerung/Daten"
 MQTT_TOPIC_CHARGE= "Guntshaus/Charge/Daten"
-                       
-#-----Deklarieren der I2C Anschlüsse(HTU)
+
+#--------------| Topics Ende |------------------------------                      
+
+#--------------| I2C (HTU) Ende |---------------------------
 htu = HTU21D(22, 21)
 
 led_Heizspule = Pin(26, Pin.OUT)
 led_Lüfter = Pin(27, Pin.OUT)
-#-----Deklarieren von Hilfvariablen
+
+#--------------| I2C Ende |---------------------------------
+
+#--------------| Hilfsvariablen |---------------------------
 bWare = 0
 zeitBWare = 0
 
@@ -41,10 +49,14 @@ bWareZeitSet = False
 uebergabeChargenID = False
 neueID = 0
 chargenID = ''
-# Erstellen des Zeitstempels
+#--------------| Hilfsvariablen Ende |-----------------------
+
+#--------------| Zeitstempel |-------------------------------
 oldTime =time.time()
 oldTimeMax =10
+#--------------| Zeitstempel Ende |---------------------------
 
+#--------------| MQTT Verbindung |----------------------------
 try:
     mqttClient.connect()
     print("MQTT-Connected")
@@ -53,7 +65,7 @@ except:
 
 
 while True:
-
+  #-----Anfrag für die Chargen ID
   if chargenID == '':
     chargenID = str(input("Bitte ChargenID eingeben: ")) # Eingabe der Chargen ID
     neueID = input("Ist die ID neu? JA = 1, Nein =0  ")
@@ -61,6 +73,7 @@ while True:
     uebergabeChargenID = False
     bWare = False
 
+  #-----Übergabe der Chargen-Daten an Node-RED
   if uebergabeChargenID == False:
     dataCharge = {
       
@@ -74,9 +87,7 @@ while True:
     print("ID versendet")
     uebergabeChargenID = True
 
-
-
-
+  #-----Ermittlung der Sensorwerte
 
   humid = round(htu.humidity)
   temp = round(htu.temperature)
@@ -85,7 +96,7 @@ while True:
   humid_string = str(humid)
   temp_string = str(temp)
 
-  # Json Filament
+  #-----Json Filament
   dataFilament ={     
       
         "Filamentbox": {
@@ -130,18 +141,21 @@ while True:
     bWareBereich = False
 
   #------Abfrage B-Ware
+  # Rücksetzen des B-Ware Timers
   if bWareBereich == False:
       bWareZeitSet = False
-
+  
+  # Setzen des B-Ware Timers
   if bWareBereich == True and bWareZeitSet == False:
     zeitBWare = time.time()
     bWareZeitSet = not bWareZeitSet
 
-  if time.time() >= zeitBWare + 30 and bWareBereich == True:
+  if time.time() >= zeitBWare + 10 and bWareBereich == True:
     bWare = 1
   else:
     bWare = 0
 
+  # B-Waren Meldung an Node-RED
   if bWare == 1:
     dataCharge = {
       
@@ -167,7 +181,7 @@ while True:
     mqttClient.publish(MQTT_TOPIC_CHARGE, json.dumps(dataCharge))
     chargenID = ''
     
-
+  # Übermittlung der Daten an den Broker und Node-RED
   
   if (time.time() >= oldTime + oldTimeMax) and chargenID != '' :
     
