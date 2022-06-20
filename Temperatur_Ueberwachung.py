@@ -16,7 +16,7 @@ Version 2 19.06.2022
 
 """""
 #--------------| Importbereich |---------------------------
-from pickle import TRUE
+
 import time, json
 from machine import Pin, SoftI2C
 from boot import mqttClient
@@ -48,7 +48,7 @@ waermen = False
 bWareBereich =False
 bWareZeitSet = False
 
-uebergabeChargenID = True65
+uebergabeChargenID = True
 neueID = 0
 chargenID = ''
 #--------------| Hilfsvariablen Ende |-----------------------
@@ -160,6 +160,8 @@ while True:
   # B-Waren Meldung an Node-RED
   if bWare == 1:
     neueID = 0
+    led_Heizspule(0)
+    led_Lüfter(0)
     dataCharge = {
       
       "Charge": {
